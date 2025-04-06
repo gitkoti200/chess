@@ -1,0 +1,117 @@
+.game {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  margin: 20px auto;
+  max-width: 1200px;
+  gap: 40px;
+  background-color: #000000;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.game-board {
+  border: 2px solid #333;
+  background: #fff;
+  padding: 2px;
+}
+
+.board-row {
+  display: flex;
+}
+
+.square {
+  width: 60px;
+  height: 60px;
+  border: 1px solid #999;
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 60px;
+  margin: -1px;
+  padding: 0;
+  text-align: center;
+  background: #fff;
+  cursor: pointer;
+}
+
+.square.selected {
+  background-color: #ffeb3b;
+}
+
+.square.check {
+  background-color: #ffa726 !important;
+}
+
+.square.checkmate {
+  background-color: #f44336 !important;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.square:focus {
+  outline: none;
+}
+
+/* Alternating square colors */
+.board-row:nth-child(odd) .square:nth-child(even),
+.board-row:nth-child(even) .square:nth-child(odd) {
+  background: #b58863;
+}
+
+.board-row:nth-child(odd) .square:nth-child(odd),
+.board-row:nth-child(even) .square:nth-child(even) {
+  background: #f0d9b5;
+}
+
+.game-info {
+  margin-left: 20px;
+  font-size: 18px;
+}
+
+.captured-pieces {
+  margin-top: 20px;
+}
+
+.captured-white, .captured-black {
+  margin-bottom: 15px;
+}
+
+.victory-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.9);
+  color: gold;
+  padding: 20px 40px;
+  border-radius: 10px;
+  font-size: 24px;
+  text-align: center;
+  animation: fadeIn 0.5s ease-in;
+  z-index: 100;
+  border: 2px solid gold;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.captured-white h3, .captured-black h3 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+}
+
+.pieces {
+  font-size: 24px;
+  line-height: 1.2;
+  min-height: 30px;
+}
