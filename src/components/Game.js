@@ -427,12 +427,42 @@ class Game extends React.Component {
     }
   }
 
+  // Calculate valid moves for the selected piece
+  getValidMovesForPiece(piecePosition) {
+    const validMoves = [];
+    if (piecePosition === null) return validMoves;
+    
+    for (let i = 0; i < 64; i++) {
+      if (this.isValidMoveWithoutCheck(piecePosition, i)) {
+        validMoves.push(i);
+      }
+    }
+    return validMoves;
+  }
+
   renderSquare(i) {
     const { selectedPiece, squares, gameStatus } = this.state;
     const isSelected = selectedPiece === i;
     const piece = squares[i];
     const isKing = piece === '♔' || piece === '♚';
+    
+    // Determine if this square is a valid move destination
+    let isValidMove = false;
+    let isValidCapture = false;
+    
+    if (selectedPiece !== null) {
+      const validMoves = this.getValidMovesForPiece(selectedPiece);
+      isValidMove = validMoves.includes(i) && !squares[i];
+      isValidCapture = validMoves.includes(i) && squares[i];
+    }
+    
     let className = `square ${isSelected ? 'selected' : ''}`;
+    
+    if (isValidMove) {
+      className += ' valid-move';
+    } else if (isValidCapture) {
+      className += ' valid-capture';
+    }
     
     if (isKing && (gameStatus === 'check' || gameStatus === 'checkmate')) {
       className += ` ${gameStatus}`;

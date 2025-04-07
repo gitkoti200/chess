@@ -6,29 +6,110 @@ class AutoGame extends Game {
     super(props);
   }
 
-  // AI move calculation
+  // AI move calculation with strategic evaluation
   calculateAIMove() {
     const squares = this.state.squares.slice();
     const validMoves = [];
 
-    // Collect all valid moves for black pieces
+    // Collect all valid moves for black pieces with evaluation
     for (let from = 0; from < 64; from++) {
       const piece = squares[from];
       if (piece && '♟♜♞♝♛♚'.includes(piece)) {
         for (let to = 0; to < 64; to++) {
           if (this.isValidMoveWithoutCheck(from, to)) {
-            validMoves.push({ from, to });
+            // Evaluate the move
+            const moveScore = this.evaluateMove(from, to, squares);
+            validMoves.push({ from, to, score: moveScore });
           }
         }
       }
     }
 
-    // Randomly select a valid move
-    if (validMoves.length > 0) {
-      const move = validMoves[Math.floor(Math.random() * validMoves.length)];
-      return move;
+    // Sort moves by score (highest first)
+    validMoves.sort((a, b) => b.score - a.score);
+
+    // Select one of the top moves with some randomness for variety
+    // Take top 30% of moves or at least 3 moves if available
+    const topMovesCount = Math.max(3, Math.floor(validMoves.length * 0.3));
+    const topMoves = validMoves.slice(0, Math.min(topMovesCount, validMoves.length));
+    
+    if (topMoves.length > 0) {
+      const selectedIndex = Math.floor(Math.random() * topMoves.length);
+      return topMoves[selectedIndex];
     }
     return null;
+  }
+
+  // Evaluate a move and return a score
+  evaluateMove(from, to, squares) {
+    let score = 0;
+    const piece = squares[from];
+    const targetPiece = squares[to];
+    
+    // Piece value for captures
+    if (targetPiece) {
+      switch(targetPiece) {
+        case '♙': score += 10; break;  // Pawn
+        case '♘': case '♗': score += 30; break;  // Knight/Bishop
+        case '♖': score += 50; break;  // Rook
+        case '♕': score += 90; break;  // Queen
+        case '♔': score += 900; break; // King
+      }
+      
+      // Evaluate piece trade (if our piece is less valuable than the captured piece)
+      const attackingPieceValue = this.getPieceValue(piece);
+      const capturedPieceValue = this.getPieceValue(targetPiece);
+      if (capturedPieceValue > attackingPieceValue) {
+        score += 5; // Bonus for favorable trades
+      }
+    }
+    
+    // Positional evaluation
+    // Center control for pawns and knights
+    const toRow = Math.floor(to / 8);
+    const toCol = to % 8;
+    
+    // Center control bonus
+    if ((toRow >= 3 && toRow <= 4) && (toCol >= 3 && toCol <= 4)) {
+      if (piece === '♟') score += 5;  // Pawns in center
+      if (piece === '♞') score += 3;  // Knights in center
+    }
+    
+    // Pawn advancement
+    if (piece === '♟') {
+      score += toRow - 1; // Bonus for advancing pawns (they start at row 1)
+    }
+    
+    // King safety - keep the king away from the center in early/mid game
+    if (piece === '♚') {
+      // Penalize king movement to the center
+      if ((toRow >= 2 && toRow <= 5) && (toCol >= 2 && toCol <= 5)) {
+        score -= 10;
+      }
+    }
+    
+    // Check if this move puts the opponent in check
+    const tempSquares = squares.slice();
+    tempSquares[to] = tempSquares[from];
+    tempSquares[from] = null;
+    if (this.isKingInCheck(tempSquares, true)) { // true for white king
+      score += 15; // Bonus for putting opponent in check
+    }
+    
+    return score;
+  }
+  
+  // Helper to get piece value
+  getPieceValue(piece) {
+    switch(piece) {
+      case '♟': case '♙': return 10;  // Pawn
+      case '♞': case '♘': return 30;  // Knight
+      case '♝': case '♗': return 30;  // Bishop
+      case '♜': case '♖': return 50;  // Rook
+      case '♛': case '♕': return 90;  // Queen
+      case '♚': case '♔': return 900; // King
+      default: return 0;
+    }
   }
 
   handleClick(i) {
@@ -41,6 +122,7 @@ class AutoGame extends Game {
     if (selectedPiece === null) {
       const piece = squares[i];
       if (piece && '♙♖♘♗♕♔'.includes(piece)) {
+        // When selecting a piece, calculate and show valid moves
         this.setState({ selectedPiece: i });
       }
       return;
@@ -134,9 +216,15 @@ class AutoGame extends Game {
 
           if (capturedPiece) {
             if ('♙♖♘♗♕♔'.includes(capturedPiece)) {
-              this.state.capturedWhitePieces.push(capturedPiece);
+              this.setState(prevState => ({
+                capturedWhitePieces: [...prevState.capturedWhitePieces, capturedPiece],
+                blackScore: prevState.blackScore + (capturedPiece === '♔' ? 50 : 1)
+              }));
             } else {
-              this.state.capturedBlackPieces.push(capturedPiece);
+              this.setState(prevState => ({
+                capturedBlackPieces: [...prevState.capturedBlackPieces, capturedPiece],
+                whiteScore: prevState.whiteScore + (capturedPiece === '♚' ? 50 : 1)
+              }));
             }
           }
 
@@ -183,7 +271,7 @@ class AutoGame extends Game {
           <div>{this.state.isWhiteTurn ? "Your turn" : "AI thinking..."}</div>
           <div>{this.state.gameStatus === 'check' ? 'Check!' : ''}</div>
           <div className="score-board">
-            <div>White Score: {this.state.whiteScore}</div>
+ m            <div>Your Score: {this.state.whiteScore}</div>
             <div>Black Score: {this.state.blackScore}</div>
           </div>
           <div className="captured-pieces">
@@ -199,8 +287,8 @@ class AutoGame extends Game {
               {this.state.winner} wins!
               <div className="final-score">
                 Final Score:
-                <div>White: {this.state.whiteScore}</div>
-                <div>Black: {this.state.blackScore}</div>
+                <div>Your Score: {this.state.whiteScore}</div>
+                <div>AI Score: {this.state.blackScore}</div>
               </div>
             </div>
           )}

@@ -23,7 +23,7 @@ class ManualGame extends Game {
     }
 
     // If a piece is selected and the move is valid
-    if (this.isValidMove(selectedPiece, i)) {
+    if (this.isValidMoveWithoutCheck(selectedPiece, i)) {
       // Make the move
       const capturedPiece = squares[i];
       squares[i] = squares[selectedPiece];
